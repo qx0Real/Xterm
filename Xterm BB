@@ -370,14 +370,99 @@ end)
 local SpawnCountSlider = Tab1:AddSlider({
     Name = "Strength Auto Farm v2",
     Min = 1,
-    Max = 60,
+    Max = 100,
     Increase = 1,
     Default = spawnCount
 })
 SpawnCountSlider:Callback(function(val)
     local n = tonumber(val) or spawnCount
-    spawnCount = math.clamp(math.floor(n), 1, 60)
+    spawnCount = math.clamp(math.floor(n), 1, 100)
 end)
+
+local autoClaim = false
+local autoAccept = false
+
+local function fireRemote(remoteName)
+    local success, err = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        local targetPlayer = game:GetService("Players"):FindFirstChild(player.Name) or player
+        local args = { targetPlayer }
+        local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
+        local remote = remotes:WaitForChild(remoteName)
+        remote:FireServer(unpack(args))
+    end)
+    if not success then
+        warn("Fehler beim Aufrufen von " .. remoteName .. ": " .. tostring(err))
+    end
+end
+
+spawn(function()
+    while true do
+        if autoClaim then
+            fireRemote("ClaimQuest")
+        end
+        wait(5)
+    end
+end)
+
+spawn(function()
+    while true do
+        if autoAccept then
+            fireRemote("StartQuest")
+        end
+        wait(5)
+    end
+end)
+
+Tab1:AddToggle({
+  Name = "Auto Claim Quest",
+  Description = "Claim Quest every 5 sec",
+  Default = false,
+  Callback = function(v)
+    autoClaim = v
+  end
+})
+
+Tab1:AddToggle({
+  Name = "Auto Accept Quest",
+  Description = "Accept Quest every 5 sec",
+  Default = false,
+  Callback = function(v)
+    autoAccept = v
+  end
+})
+
+local autoMastery = false
+
+local function fireMastery()
+    local ok, err = pcall(function()
+        local player = game:GetService("Players").LocalPlayer
+        local remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
+        local remote = remotes:WaitForChild("MasteryLevel")
+        remote:FireServer(player)
+    end)
+    if not ok then
+        warn("Fehler beim Aufrufen von MasteryLevel: "..tostring(err))
+    end
+end
+
+spawn(function()
+    while true do
+        if autoMastery then
+            fireMastery()
+        end
+        wait(5)
+    end
+end)
+
+Tab1:AddToggle({
+  Name = "Auto Claim Mastery",
+  Description = "Auto Claim Quest Mastery every 5 sec",
+  Default = false,
+  Callback = function(v)
+    autoMastery = v
+  end
+})
 
 local ToggleAutoBuy = Tab2:AddToggle({
     Name = "Auto Buy Body Parts",
